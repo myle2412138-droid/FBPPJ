@@ -1,0 +1,1440 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FBP Reconstruction - Tái tạo ảnh CT</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #0f0f1a;
+      color: #e0e0e0;
+      min-height: 100vh;
+    }
+    
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      padding: 15px 30px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #333;
+    }
+    
+    .header h1 {
+      font-size: 20px;
+      color: #667eea;
+    }
+    
+    .header nav a {
+      color: #aaa;
+      text-decoration: none;
+      margin-left: 25px;
+      font-size: 14px;
+      transition: color 0.2s;
+    }
+    
+    .header nav a:hover,
+    .header nav a.active {
+      color: #667eea;
+    }
+    
+    /* Main Layout */
+    .main-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 30px;
+    }
+    
+    .page-title {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    
+    .page-title h2 {
+      font-size: 28px;
+      color: #fff;
+      margin-bottom: 10px;
+    }
+    
+    .page-title p {
+      color: #888;
+      font-size: 14px;
+    }
+    
+    /* Control Panel */
+    .control-panel {
+      background: #1a1a2e;
+      border-radius: 12px;
+      padding: 25px;
+      margin-bottom: 25px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      align-items: flex-end;
+    }
+    
+    .control-group {
+      flex: 1;
+      min-width: 200px;
+    }
+    
+    .control-group label {
+      display: block;
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .control-group select,
+    .control-group input[type="number"] {
+      width: 100%;
+      padding: 12px 15px;
+      background: #0f0f1a;
+      border: 1px solid #333;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 14px;
+    }
+    
+    .control-group select:focus,
+    .control-group input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    
+    /* Buttons */
+    .btn {
+      padding: 12px 25px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+    }
+    
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .btn-secondary {
+      background: #2a2a4a;
+      color: #fff;
+    }
+    
+    .btn-secondary:hover {
+      background: #3a3a5a;
+    }
+    
+    .btn-success {
+      background: #10b981;
+      color: #fff;
+    }
+    
+    /* Image Grid */
+    .image-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 25px;
+    }
+    
+    @media (max-width: 1000px) {
+      .image-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    .image-panel {
+      background: #1a1a2e;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    
+    .panel-header {
+      padding: 15px 20px;
+      background: #16213e;
+      border-bottom: 1px solid #333;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .panel-header h3 {
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .panel-header .step-number {
+      width: 24px;
+      height: 24px;
+      background: #667eea;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    
+    .panel-body {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    
+    .canvas-container {
+      width: 100%;
+      aspect-ratio: 1;
+      background: #0a0a15;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .canvas-container canvas {
+      max-width: 100%;
+      max-height: 100%;
+    }
+    
+    /* Upload Zone */
+    .upload-zone {
+      width: 100%;
+      aspect-ratio: 1;
+      background: #0a0a15;
+      border: 2px dashed #333;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .upload-zone:hover {
+      border-color: #667eea;
+      background: #0f0f20;
+    }
+    
+    .upload-zone.has-image {
+      border-style: solid;
+      border-color: #10b981;
+    }
+    
+    .upload-zone i {
+      font-size: 48px;
+      color: #444;
+      margin-bottom: 15px;
+    }
+    
+    .upload-zone p {
+      color: #666;
+      font-size: 14px;
+    }
+    
+    .upload-zone img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+    
+    /* Panel Info */
+    .panel-info {
+      width: 100%;
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid #333;
+      font-size: 12px;
+      color: #888;
+    }
+    
+    .panel-info .info-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 5px;
+    }
+    
+    .panel-info .info-row span:last-child {
+      color: #aaa;
+    }
+    
+    /* Status Bar */
+    .status-bar {
+      background: #1a1a2e;
+      border-radius: 12px;
+      padding: 20px 25px;
+      margin-top: 25px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .status-text {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .status-text i {
+      font-size: 18px;
+    }
+    
+    .status-text.ready i { color: #10b981; }
+    .status-text.processing i { color: #f59e0b; }
+    .status-text.error i { color: #ef4444; }
+    
+    .progress-bar {
+      flex: 1;
+      max-width: 400px;
+      height: 8px;
+      background: #0f0f1a;
+      border-radius: 4px;
+      margin: 0 30px;
+      overflow: hidden;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      border-radius: 4px;
+      width: 0%;
+      transition: width 0.3s;
+    }
+    
+    /* Placeholder text */
+    .placeholder-text {
+      color: #444;
+      font-size: 14px;
+      text-align: center;
+    }
+    
+    /* Spinner */
+    .spinner {
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* Action buttons row */
+    .action-buttons {
+      display: flex;
+      gap: 15px;
+      margin-left: auto;
+    }
+
+    /* Clickable images for zoom */
+    .canvas-container.zoomable,
+    .upload-zone.has-image {
+      cursor: zoom-in;
+    }
+
+    /* Image Zoom Modal */
+    .zoom-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.95);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+
+    .zoom-modal.active {
+      display: flex;
+    }
+
+    .zoom-modal-header {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 15px 25px;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 1001;
+    }
+
+    .zoom-modal-title {
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .zoom-modal-close {
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 24px;
+      cursor: pointer;
+      padding: 5px 10px;
+      transition: color 0.2s;
+    }
+
+    .zoom-modal-close:hover {
+      color: #667eea;
+    }
+
+    .zoom-modal-content {
+      max-width: 90vw;
+      max-height: 85vh;
+      overflow: auto;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .zoom-modal-content img,
+    .zoom-modal-content canvas {
+      max-width: 100%;
+      max-height: 85vh;
+      object-fit: contain;
+      image-rendering: pixelated;
+    }
+
+    .zoom-controls {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 15px;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 10px 20px;
+      border-radius: 25px;
+    }
+
+    .zoom-controls button {
+      background: #333;
+      border: none;
+      color: #fff;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 16px;
+      transition: all 0.2s;
+    }
+
+    .zoom-controls button:hover {
+      background: #667eea;
+    }
+
+    .zoom-level {
+      color: #fff;
+      display: flex;
+      align-items: center;
+      min-width: 60px;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <h1><i class="fas fa-wave-square"></i> FBP Reconstruction</h1>
+    <nav>
+      <a href="../home/index.html">Trang chủ</a>
+      <a href="../theory/index.html">Lý thuyết</a>
+      <a href="../mophong/index.html" class="active">Tái tạo CT</a>
+      <a href="../analysis/index.html">Phân tích</a>
+      <a href="../chatbot/index.html">Chatbot</a>
+    </nav>
+  </header>
+
+  <div class="main-container">
+    <!-- Page Title -->
+    <div class="page-title">
+      <h2>Tái tạo ảnh CT từ Sinogram</h2>
+      <p>Upload sinogram → Áp dụng bộ lọc → Back-projection → Ảnh CT</p>
+    </div>
+
+    <!-- Control Panel -->
+    <div class="control-panel">
+      <div class="control-group">
+        <label>Bộ lọc (Filter)</label>
+        <select id="filterType">
+          <option value="ram-lak">Ram-Lak (Ramp)</option>
+          <option value="shepp-logan">Shepp-Logan</option>
+          <option value="hamming">Hamming</option>
+          <option value="hann">Hann</option>
+          <option value="cosine">Cosine</option>
+          <option value="none">Không lọc</option>
+        </select>
+      </div>
+      
+      <div class="control-group">
+        <label>Kích thước Output (px)</label>
+        <input type="number" id="outputSize" value="256" min="64" max="512" step="64">
+      </div>
+      
+      <div class="control-group">
+        <label>Phạm vi góc</label>
+        <select id="angleRange">
+          <option value="180">0° - 180°</option>
+          <option value="360">0° - 360°</option>
+        </select>
+      </div>
+      
+      <div class="control-group">
+        <label>Xoay ảnh (°)</label>
+        <select id="rotationOffset">
+          <option value="0">0°</option>
+          <option value="90" selected>90°</option>
+          <option value="180">180°</option>
+          <option value="270">270°</option>
+        </select>
+      </div>
+
+      <div class="action-buttons">
+        <button class="btn btn-secondary" id="demoBtn">
+          <i class="fas fa-magic"></i> Tạo Demo
+        </button>
+        <button class="btn btn-primary" id="runBtn" disabled>
+          <i class="fas fa-play"></i> BẮT ĐẦU TÁI TẠO
+        </button>
+        <button class="btn btn-secondary" id="resetBtn">
+          <i class="fas fa-redo"></i> Reset
+        </button>
+      </div>
+    </div>
+
+    <!-- Image Grid: 3 panels -->
+    <div class="image-grid">
+      <!-- Panel 1: Input Sinogram -->
+      <div class="image-panel">
+        <div class="panel-header">
+          <h3><span class="step-number">1</span> Sinogram đầu vào</h3>
+        </div>
+        <div class="panel-body">
+          <div class="upload-zone" id="uploadZone">
+            <i class="fas fa-cloud-upload-alt"></i>
+            <p>Click hoặc kéo thả ảnh sinogram</p>
+            <input type="file" id="fileInput" accept="image/*" hidden>
+          </div>
+          <canvas id="inputCanvas" style="display:none;"></canvas>
+          <div class="panel-info">
+            <div class="info-row">
+              <span>Kích thước:</span>
+              <span id="inputSize">-</span>
+            </div>
+            <div class="info-row">
+              <span>Số góc (rows):</span>
+              <span id="inputAngles">-</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel 2: Filtered Sinogram -->
+      <div class="image-panel">
+        <div class="panel-header">
+          <h3><span class="step-number">2</span> Sinogram sau lọc</h3>
+        </div>
+        <div class="panel-body">
+          <div class="canvas-container">
+            <canvas id="filteredCanvas"></canvas>
+            <p class="placeholder-text" id="filteredPlaceholder">Chờ xử lý...</p>
+          </div>
+          <div class="panel-info">
+            <div class="info-row">
+              <span>Bộ lọc:</span>
+              <span id="filterUsed">-</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel 3: Reconstructed CT -->
+      <div class="image-panel">
+        <div class="panel-header">
+          <h3><span class="step-number">3</span> Ảnh CT tái tạo</h3>
+          <button class="btn btn-success" id="downloadBtn" style="padding: 8px 15px; font-size: 12px;" disabled>
+            <i class="fas fa-download"></i> Tải xuống
+          </button>
+        </div>
+        <div class="panel-body">
+          <div class="canvas-container">
+            <canvas id="outputCanvas"></canvas>
+            <p class="placeholder-text" id="outputPlaceholder">Chờ tái tạo...</p>
+          </div>
+          <div class="panel-info">
+            <div class="info-row">
+              <span>Kích thước:</span>
+              <span id="outputSizeInfo">-</span>
+            </div>
+            <div class="info-row">
+              <span>Thời gian:</span>
+              <span id="processingTime">-</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+      <div class="status-text ready" id="statusText">
+        <i class="fas fa-circle"></i>
+        <span>Sẵn sàng - Vui lòng upload sinogram</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressBar"></div>
+      </div>
+      <span id="progressPercent">0%</span>
+    </div>
+  </div>
+
+  <!-- Image Zoom Modal -->
+  <div class="zoom-modal" id="zoomModal">
+    <div class="zoom-modal-header">
+      <span class="zoom-modal-title" id="zoomTitle">Zoom Image</span>
+      <button class="zoom-modal-close" id="closeZoom">&times;</button>
+    </div>
+    <div class="zoom-modal-content" id="zoomContent">
+      <img id="zoomImage" src="" alt="Zoomed image">
+    </div>
+    <div class="zoom-controls">
+      <button id="zoomOut" title="Thu nhỏ"><i class="fas fa-minus"></i></button>
+      <span class="zoom-level" id="zoomLevel">100%</span>
+      <button id="zoomIn" title="Phóng to"><i class="fas fa-plus"></i></button>
+      <button id="zoomReset" title="Reset"><i class="fas fa-undo"></i></button>
+      <button id="zoomDownload" title="Tải xuống"><i class="fas fa-download"></i></button>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script>
+    // ============================================
+    // SIMPLE FBP RECONSTRUCTION APP
+    // ============================================
+    
+    const $ = id => document.getElementById(id);
+    
+    // State
+    let inputImage = null;
+    let filteredImage = null;
+    let reconstructedImage = null;
+    let isProcessing = false;
+    let currentZoom = 1;
+    let currentZoomImage = null;
+    let currentZoomTitle = '';
+    
+    // DOM Elements
+    const uploadZone = $('uploadZone');
+    const fileInput = $('fileInput');
+    const inputCanvas = $('inputCanvas');
+    const filteredCanvas = $('filteredCanvas');
+    const outputCanvas = $('outputCanvas');
+    const runBtn = $('runBtn');
+    const resetBtn = $('resetBtn');
+    const demoBtn = $('demoBtn');
+    const downloadBtn = $('downloadBtn');
+    
+    // Zoom Modal Elements
+    const zoomModal = $('zoomModal');
+    const zoomImage = $('zoomImage');
+    const zoomTitle = $('zoomTitle');
+    const zoomLevel = $('zoomLevel');
+    
+    // ============================================
+    // ZOOM FUNCTIONALITY
+    // ============================================
+    function openZoom(imageSrc, title) {
+      currentZoomImage = imageSrc;
+      currentZoomTitle = title;
+      zoomImage.src = imageSrc;
+      zoomTitle.textContent = title;
+      currentZoom = 1;
+      updateZoomLevel();
+      zoomModal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+    
+    function closeZoom() {
+      zoomModal.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+    
+    function updateZoomLevel() {
+      zoomLevel.textContent = Math.round(currentZoom * 100) + '%';
+      zoomImage.style.transform = `scale(${currentZoom})`;
+    }
+    
+    $('closeZoom').addEventListener('click', closeZoom);
+    $('zoomIn').addEventListener('click', () => {
+      currentZoom = Math.min(currentZoom * 1.25, 5);
+      updateZoomLevel();
+    });
+    $('zoomOut').addEventListener('click', () => {
+      currentZoom = Math.max(currentZoom / 1.25, 0.25);
+      updateZoomLevel();
+    });
+    $('zoomReset').addEventListener('click', () => {
+      currentZoom = 1;
+      updateZoomLevel();
+    });
+    $('zoomDownload').addEventListener('click', () => {
+      const link = document.createElement('a');
+      link.download = currentZoomTitle.replace(/\s+/g, '_') + '.png';
+      link.href = currentZoomImage;
+      link.click();
+    });
+    
+    // Close on click outside or Escape
+    zoomModal.addEventListener('click', (e) => {
+      if (e.target === zoomModal) closeZoom();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeZoom();
+      if (zoomModal.classList.contains('active')) {
+        if (e.key === '+' || e.key === '=') {
+          currentZoom = Math.min(currentZoom * 1.25, 5);
+          updateZoomLevel();
+        }
+        if (e.key === '-') {
+          currentZoom = Math.max(currentZoom / 1.25, 0.25);
+          updateZoomLevel();
+        }
+      }
+    });
+    
+    // Make canvases clickable for zoom
+    inputCanvas.addEventListener('click', () => {
+      if (inputImage) {
+        openZoom(inputCanvas.toDataURL(), 'Sinogram đầu vào');
+      }
+    });
+    
+    filteredCanvas.parentElement.addEventListener('click', () => {
+      if (filteredImage) {
+        openZoom(filteredImage, 'Sinogram sau lọc');
+      }
+    });
+    
+    outputCanvas.parentElement.addEventListener('click', () => {
+      if (reconstructedImage) {
+        openZoom(reconstructedImage, 'Ảnh CT tái tạo');
+      }
+    });
+
+    // ============================================
+    // FILE UPLOAD
+    // ============================================
+    uploadZone.addEventListener('click', () => fileInput.click());
+    
+    uploadZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadZone.style.borderColor = '#667eea';
+    });
+    
+    uploadZone.addEventListener('dragleave', () => {
+      uploadZone.style.borderColor = '#333';
+    });
+    
+    uploadZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadZone.style.borderColor = '#333';
+      if (e.dataTransfer.files.length > 0) {
+        loadImage(e.dataTransfer.files[0]);
+      }
+    });
+    
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        loadImage(e.target.files[0]);
+      }
+    });
+    
+    function loadImage(file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          inputImage = img;
+          displayInputImage(img);
+          enableRunButton();
+          updateStatus('ready', 'Ảnh đã tải - Nhấn BẮT ĐẦU TÁI TẠO');
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+    
+    function displayInputImage(img) {
+      // Show canvas, hide upload zone
+      uploadZone.style.display = 'none';
+      inputCanvas.style.display = 'block';
+      inputCanvas.style.cursor = 'zoom-in';
+      
+      // Draw image
+      inputCanvas.width = img.width;
+      inputCanvas.height = img.height;
+      const ctx = inputCanvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      
+      // Update info
+      $('inputSize').textContent = `${img.width} × ${img.height}`;
+      $('inputAngles').textContent = img.height;
+    }
+    
+    // ============================================
+    // DEMO: Generate Sinogram from Phantom
+    // ============================================
+    demoBtn.addEventListener('click', generateDemo);
+    
+    function generateDemo() {
+      updateStatus('processing', 'Đang tạo phantom demo...');
+      
+      const size = 256;
+      const numAngles = parseInt($('numAngles').value) || 180;
+      
+      // Create Shepp-Logan phantom
+      const phantomCanvas = document.createElement('canvas');
+      phantomCanvas.width = size;
+      phantomCanvas.height = size;
+      const ctx = phantomCanvas.getContext('2d');
+      
+      // Black background
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, size, size);
+      
+      // Draw simplified Shepp-Logan
+      ctx.fillStyle = '#ddd';
+      ctx.beginPath();
+      ctx.ellipse(size/2, size/2, size*0.4, size*0.45, 0, 0, Math.PI*2);
+      ctx.fill();
+      
+      ctx.fillStyle = '#333';
+      ctx.beginPath();
+      ctx.ellipse(size/2, size/2, size*0.35, size*0.38, 0, 0, Math.PI*2);
+      ctx.fill();
+      
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.ellipse(size*0.35, size*0.5, size*0.08, size*0.15, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(size*0.65, size*0.5, size*0.06, size*0.12, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(size*0.5, size*0.7, size*0.12, size*0.05, 0, 0, Math.PI*2);
+      ctx.fill();
+      
+      // Create sinogram using Radon transform
+      setTimeout(() => {
+        updateStatus('processing', 'Đang tạo sinogram (Radon transform)...');
+        
+        const sinogramCanvas = createSinogram(phantomCanvas, numAngles);
+        
+        // Convert to image
+        const img = new Image();
+        img.onload = () => {
+          inputImage = img;
+          displayInputImage(img);
+          enableRunButton();
+          updateStatus('ready', 'Demo sinogram đã tạo - Nhấn BẮT ĐẦU TÁI TẠO');
+        };
+        img.src = sinogramCanvas.toDataURL();
+      }, 100);
+    }
+    
+    function createSinogram(phantomCanvas, numAngles) {
+      const size = phantomCanvas.width;
+      const ctx = phantomCanvas.getContext('2d');
+      const imageData = ctx.getImageData(0, 0, size, size);
+      const data = imageData.data;
+      
+      // Convert to grayscale array
+      const phantom = new Float32Array(size * size);
+      for (let i = 0; i < size * size; i++) {
+        phantom[i] = data[i * 4] / 255.0;
+      }
+      
+      // Radon transform (Line integral)
+      const numDetectors = Math.ceil(Math.sqrt(2) * size);
+      const sinogram = new Float32Array(numDetectors * numAngles);
+      
+      const centerX = (size - 1) / 2;
+      const centerY = (size - 1) / 2;
+      const centerDet = (numDetectors - 1) / 2;
+      
+      for (let a = 0; a < numAngles; a++) {
+        const theta = (a / numAngles) * Math.PI;
+        const cosT = Math.cos(theta);
+        const sinT = Math.sin(theta);
+        
+        for (let d = 0; d < numDetectors; d++) {
+          // Detector position (offset from center)
+          const t = d - centerDet;
+          
+          // Integrate along the ray: sum all pixels along the line
+          // Line: x*cos(θ) + y*sin(θ) = t
+          // Parametric: x = t*cos(θ) - s*sin(θ), y = t*sin(θ) + s*cos(θ)
+          let sum = 0;
+          const numSamples = Math.ceil(size * 1.5);
+          
+          for (let i = 0; i < numSamples; i++) {
+            const s = (i - numSamples / 2);
+            
+            // Position in image coordinates
+            const x = centerX + t * cosT - s * sinT;
+            const y = centerY + t * sinT + s * cosT;
+            
+            // Bilinear interpolation for better quality
+            const x0 = Math.floor(x);
+            const y0 = Math.floor(y);
+            const x1 = x0 + 1;
+            const y1 = y0 + 1;
+            
+            if (x0 >= 0 && x1 < size && y0 >= 0 && y1 < size) {
+              const fx = x - x0;
+              const fy = y - y0;
+              
+              const v00 = phantom[y0 * size + x0];
+              const v01 = phantom[y0 * size + x1];
+              const v10 = phantom[y1 * size + x0];
+              const v11 = phantom[y1 * size + x1];
+              
+              const val = v00 * (1-fx) * (1-fy) + 
+                         v01 * fx * (1-fy) + 
+                         v10 * (1-fx) * fy + 
+                         v11 * fx * fy;
+              sum += val;
+            }
+          }
+          
+          // Store line integral (scaled)
+          sinogram[a * numDetectors + d] = sum;
+        }
+      }
+      
+      // Normalize sinogram
+      let maxVal = 0;
+      for (let i = 0; i < sinogram.length; i++) {
+        if (sinogram[i] > maxVal) maxVal = sinogram[i];
+      }
+      
+      const sinogramCanvas = document.createElement('canvas');
+      sinogramCanvas.width = numDetectors;
+      sinogramCanvas.height = numAngles;
+      const sctx = sinogramCanvas.getContext('2d');
+      const sImageData = sctx.createImageData(numDetectors, numAngles);
+      
+      for (let i = 0; i < sinogram.length; i++) {
+        const val = maxVal > 0 ? Math.round((sinogram[i] / maxVal) * 255) : 0;
+        sImageData.data[i * 4] = val;
+        sImageData.data[i * 4 + 1] = val;
+        sImageData.data[i * 4 + 2] = val;
+        sImageData.data[i * 4 + 3] = 255;
+      }
+      
+      sctx.putImageData(sImageData, 0, 0);
+      return sinogramCanvas;
+    }
+    
+    // ============================================
+    // RUN RECONSTRUCTION
+    // ============================================
+    runBtn.addEventListener('click', runReconstruction);
+    
+    async function runReconstruction() {
+      if (!inputImage || isProcessing) return;
+      
+      isProcessing = true;
+      disableRunButton();
+      const startTime = Date.now();
+      
+      try {
+        // Get parameters
+        const filterType = $('filterType').value;
+        const outputSize = parseInt($('outputSize').value) || 256;
+        const angleRangeDeg = parseInt($('angleRange').value) || 180;
+        
+        // Step 1: Convert image to base64
+        updateStatus('processing', 'Bước 1/3: Chuẩn bị sinogram...');
+        updateProgress(10);
+        
+        const sinogramB64 = getImageAsBase64(inputImage);
+        await sleep(100);
+        
+        // Step 2: Call API
+        updateStatus('processing', `Bước 2/3: Đang tái tạo (${filterType})...`);
+        updateProgress(30);
+        
+        const response = await fetch('/api/fbp/reconstruct', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sinogram: sinogramB64,
+            filter: filterType,
+            output_size: outputSize,
+            angle_range: angleRangeDeg
+          })
+        });
+        
+        const result = await response.json();
+        
+        if (!result.success) {
+          throw new Error(result.error || 'Reconstruction failed');
+        }
+        
+        updateProgress(80);
+        
+        // Step 3: Display results
+        updateStatus('processing', 'Bước 3/3: Hiển thị kết quả...');
+        
+        // Display filtered sinogram
+        if (result.filtered_sinogram) {
+          const filteredImg = new Image();
+          filteredImg.onload = function() {
+            filteredCanvas.width = this.width;
+            filteredCanvas.height = this.height;
+            const fctx = filteredCanvas.getContext('2d');
+            fctx.drawImage(this, 0, 0);
+            $('filteredPlaceholder').style.display = 'none';
+            filteredCanvas.parentElement.classList.add('zoomable');
+            filteredCanvas.parentElement.style.cursor = 'zoom-in';
+            filteredImage = result.filtered_sinogram;
+          };
+          filteredImg.src = result.filtered_sinogram;
+        }
+        
+        $('filterUsed').textContent = filterType;
+        
+        // Load and display reconstructed image
+        const reconImg = new Image();
+        reconImg.onload = function() {
+          outputCanvas.width = outputSize;
+          outputCanvas.height = outputSize;
+          const ctx = outputCanvas.getContext('2d');
+          ctx.drawImage(reconImg, 0, 0, outputSize, outputSize);
+          $('outputPlaceholder').style.display = 'none';
+          outputCanvas.parentElement.classList.add('zoomable');
+          outputCanvas.parentElement.style.cursor = 'zoom-in';
+          reconstructedImage = result.image;
+          
+          // Done
+          const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
+          $('processingTime').textContent = `${elapsed}s`;
+          $('outputSizeInfo').textContent = `${outputSize} × ${outputSize}`;
+          
+          updateProgress(100);
+          updateStatus('ready', `Hoàn thành trong ${elapsed}s - Click vào ảnh để zoom`);
+          downloadBtn.disabled = false;
+          
+          isProcessing = false;
+          enableRunButton();
+        };
+        reconImg.src = result.image;
+        
+      } catch (error) {
+        console.error('Reconstruction error:', error);
+        updateStatus('error', 'Lỗi: ' + error.message);
+        isProcessing = false;
+        enableRunButton();
+      }
+    }
+    
+    function getImageAsBase64(img) {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      return canvas.toDataURL('image/png');
+    }
+    
+    function getSinogramData(img) {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      
+      const imageData = ctx.getImageData(0, 0, img.width, img.height);
+      const data = imageData.data;
+      
+      // Convert to 2D array [angles][detectors]
+      // Sinogram format: rows = angles (0 to π), columns = detector positions
+      const sinogram = [];
+      let minVal = Infinity, maxVal = -Infinity;
+      
+      // First pass: find min/max
+      for (let y = 0; y < img.height; y++) {
+        for (let x = 0; x < img.width; x++) {
+          const idx = (y * img.width + x) * 4;
+          const val = data[idx];
+          if (val < minVal) minVal = val;
+          if (val > maxVal) maxVal = val;
+        }
+      }
+      
+      const range = maxVal - minVal || 1;
+      
+      // Second pass: normalize and store
+      for (let y = 0; y < img.height; y++) {
+        const row = [];
+        for (let x = 0; x < img.width; x++) {
+          const idx = (y * img.width + x) * 4;
+          // Normalize to [0, 1] range based on actual data range
+          const val = (data[idx] - minVal) / range;
+          row.push(val);
+        }
+        sinogram.push(row);
+      }
+      
+      return {
+        data: sinogram,
+        width: img.width,
+        height: img.height
+      };
+    }
+    
+    function applyFilter(sinogramData, filterType) {
+      const { data, width, height } = sinogramData;
+      const filtered = [];
+      
+      // Create spatial-domain filter kernel (Ram-Lak)
+      // Larger kernel = better frequency response but slower
+      const kernelSize = Math.min(width, 129); // Odd size, up to 129
+      const kernel = createSpatialFilter(kernelSize, filterType);
+      
+      for (let a = 0; a < height; a++) {
+        const projection = data[a];
+        
+        // Convolve projection with filter
+        const filteredProj = new Array(width);
+        const halfKernel = Math.floor(kernelSize / 2);
+        
+        for (let i = 0; i < width; i++) {
+          let sum = 0;
+          for (let k = -halfKernel; k <= halfKernel; k++) {
+            const idx = i + k;
+            if (idx >= 0 && idx < width) {
+              sum += projection[idx] * kernel[k + halfKernel];
+            }
+          }
+          filteredProj[i] = sum;
+        }
+        
+        filtered.push(filteredProj);
+      }
+      
+      return {
+        data: filtered,
+        width: width,
+        height: height
+      };
+    }
+    
+    function createSpatialFilter(size, type) {
+      // Ram-Lak filter in spatial domain
+      // h(n) = 1/4 if n=0
+      // h(n) = 0 if n is even
+      // h(n) = -1/(π²n²) if n is odd
+      
+      const filter = new Array(size).fill(0);
+      const center = Math.floor(size / 2);
+      
+      for (let i = 0; i < size; i++) {
+        const n = i - center;
+        
+        if (n === 0) {
+          filter[i] = 0.25;
+        } else if (n % 2 !== 0) {
+          // Odd n
+          filter[i] = -1.0 / (Math.PI * Math.PI * n * n);
+        } else {
+          // Even n (not zero)
+          filter[i] = 0;
+        }
+      }
+      
+      // Apply window function for other filter types
+      if (type !== 'ram-lak' && type !== 'none') {
+        for (let i = 0; i < size; i++) {
+          const n = i - center;
+          const freq = Math.abs(n) / center;
+          let window = 1.0;
+          
+          switch (type) {
+            case 'shepp-logan':
+              if (freq > 0.001) {
+                window = Math.sin(Math.PI * freq / 2) / (Math.PI * freq / 2);
+              }
+              break;
+            case 'hamming':
+              window = 0.54 + 0.46 * Math.cos(Math.PI * freq);
+              break;
+            case 'hann':
+              window = 0.5 * (1 + Math.cos(Math.PI * freq));
+              break;
+            case 'cosine':
+              window = Math.cos(Math.PI * freq / 2);
+              break;
+          }
+          
+          filter[i] *= window;
+        }
+      }
+      
+      if (type === 'none') {
+        // No filtering - return delta function
+        filter.fill(0);
+        filter[center] = 1;
+      }
+      
+      return filter;
+    }
+    
+    function displayFilteredSinogram(filteredData) {
+      const { data, width, height } = filteredData;
+      
+      // Find min/max for normalization
+      let minVal = Infinity, maxVal = -Infinity;
+      for (let row of data) {
+        for (let val of row) {
+          if (val < minVal) minVal = val;
+          if (val > maxVal) maxVal = val;
+        }
+      }
+      
+      const range = maxVal - minVal || 1;
+      
+      filteredCanvas.width = width;
+      filteredCanvas.height = height;
+      const ctx = filteredCanvas.getContext('2d');
+      const imageData = ctx.createImageData(width, height);
+      
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          const val = Math.round(((data[y][x] - minVal) / range) * 255);
+          const idx = (y * width + x) * 4;
+          imageData.data[idx] = val;
+          imageData.data[idx + 1] = val;
+          imageData.data[idx + 2] = val;
+          imageData.data[idx + 3] = 255;
+        }
+      }
+      
+      ctx.putImageData(imageData, 0, 0);
+      $('filteredPlaceholder').style.display = 'none';
+    }
+    
+    function backProject(filteredData, outputSize, angleRange, rotationOffset) {
+      const { data, width, height } = filteredData;
+      const numAngles = height;
+      const numDetectors = width;
+      
+      // Default values
+      if (!angleRange) angleRange = Math.PI;
+      if (!rotationOffset) rotationOffset = 0;
+      
+      const reconstructed = new Float32Array(outputSize * outputSize);
+      
+      // Center positions
+      const centerOut = (outputSize - 1) / 2.0;
+      const centerDet = (numDetectors - 1) / 2.0;
+      
+      // Reconstruction circle radius in detector units
+      const reconRadius = centerDet;
+      
+      for (let a = 0; a < numAngles; a++) {
+        // Angle for this projection with rotation offset
+        const theta = (a / numAngles) * angleRange + rotationOffset;
+        const cosT = Math.cos(theta);
+        const sinT = Math.sin(theta);
+        const projection = data[a];
+        
+        for (let iy = 0; iy < outputSize; iy++) {
+          // Map pixel to physical coordinate
+          const y = ((iy - centerOut) / centerOut) * reconRadius;
+          
+          for (let ix = 0; ix < outputSize; ix++) {
+            const x = ((ix - centerOut) / centerOut) * reconRadius;
+            
+            // Compute detector position: t = x*cos(θ) + y*sin(θ)
+            const t = x * cosT + y * sinT;
+            
+            // Convert to detector index
+            const detIdx = t + centerDet;
+            
+            // Linear interpolation
+            const t0 = Math.floor(detIdx);
+            const t1 = t0 + 1;
+            const frac = detIdx - t0;
+            
+            if (t0 >= 0 && t1 < numDetectors) {
+              const val = projection[t0] * (1 - frac) + projection[t1] * frac;
+              reconstructed[iy * outputSize + ix] += val;
+            }
+          }
+        }
+        
+        // Update progress
+        if (a % 20 === 0) {
+          const progress = 60 + (a / numAngles) * 30;
+          updateProgress(progress);
+        }
+      }
+      
+      // Normalize
+      const dTheta = angleRange / numAngles;
+      for (let i = 0; i < reconstructed.length; i++) {
+        reconstructed[i] *= dTheta;
+      }
+      
+      return reconstructed;
+    }
+    
+    function displayReconstructedImage(data, size) {
+      // Find min/max
+      let minVal = Infinity, maxVal = -Infinity;
+      for (let val of data) {
+        if (val < minVal) minVal = val;
+        if (val > maxVal) maxVal = val;
+      }
+      
+      const range = maxVal - minVal || 1;
+      
+      outputCanvas.width = size;
+      outputCanvas.height = size;
+      const ctx = outputCanvas.getContext('2d');
+      const imageData = ctx.createImageData(size, size);
+      
+      for (let i = 0; i < data.length; i++) {
+        const val = Math.round(((data[i] - minVal) / range) * 255);
+        imageData.data[i * 4] = val;
+        imageData.data[i * 4 + 1] = val;
+        imageData.data[i * 4 + 2] = val;
+        imageData.data[i * 4 + 3] = 255;
+      }
+      
+      ctx.putImageData(imageData, 0, 0);
+      $('outputPlaceholder').style.display = 'none';
+    }
+    
+    // ============================================
+    // UTILITY FUNCTIONS
+    // ============================================
+    function enableRunButton() {
+      runBtn.disabled = false;
+    }
+    
+    function disableRunButton() {
+      runBtn.disabled = true;
+    }
+    
+    function updateStatus(type, message) {
+      const statusEl = $('statusText');
+      statusEl.className = 'status-text ' + type;
+      
+      let icon = 'fa-circle';
+      if (type === 'processing') icon = 'fa-circle-notch spinner';
+      else if (type === 'error') icon = 'fa-exclamation-circle';
+      else if (type === 'ready') icon = 'fa-check-circle';
+      
+      statusEl.innerHTML = `<i class="fas ${icon}"></i><span>${message}</span>`;
+    }
+    
+    function updateProgress(percent) {
+      $('progressBar').style.width = percent + '%';
+      $('progressPercent').textContent = Math.round(percent) + '%';
+    }
+    
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+    
+    // Reset
+    resetBtn.addEventListener('click', () => {
+      inputImage = null;
+      filteredImage = null;
+      reconstructedImage = null;
+      
+      // Reset upload zone
+      uploadZone.style.display = 'flex';
+      inputCanvas.style.display = 'none';
+      inputCanvas.style.cursor = 'default';
+      
+      // Clear canvases
+      filteredCanvas.getContext('2d').clearRect(0, 0, filteredCanvas.width, filteredCanvas.height);
+      outputCanvas.getContext('2d').clearRect(0, 0, outputCanvas.width, outputCanvas.height);
+      
+      // Remove zoomable
+      filteredCanvas.parentElement.classList.remove('zoomable');
+      filteredCanvas.parentElement.style.cursor = 'default';
+      outputCanvas.parentElement.classList.remove('zoomable');
+      outputCanvas.parentElement.style.cursor = 'default';
+      
+      // Show placeholders
+      $('filteredPlaceholder').style.display = 'block';
+      $('outputPlaceholder').style.display = 'block';
+      
+      // Reset info
+      $('inputSize').textContent = '-';
+      $('inputAngles').textContent = '-';
+      $('filterUsed').textContent = '-';
+      $('outputSizeInfo').textContent = '-';
+      $('processingTime').textContent = '-';
+      
+      // Reset buttons
+      runBtn.disabled = true;
+      downloadBtn.disabled = true;
+      
+      // Reset progress
+      updateProgress(0);
+      updateStatus('ready', 'Sẵn sàng - Vui lòng upload sinogram');
+    });
+    
+    // Download
+    downloadBtn.addEventListener('click', () => {
+      const link = document.createElement('a');
+      link.download = 'reconstructed_ct.png';
+      link.href = outputCanvas.toDataURL('image/png');
+      link.click();
+    });
+    
+    // Initial state
+    updateStatus('ready', 'Sẵn sàng - Vui lòng upload sinogram');
+  </script>
+</body>
+</html>

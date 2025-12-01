@@ -1,175 +1,124 @@
-# FBP - Filter Back-Projection Platform
+# FBP Medical Imaging Project
 
-## Cấu trúc thư mục mới
+Hệ thống phân tích hình ảnh y tế sử dụng thuật toán Filtered Back-Projection (FBP) và AI.
+
+## 📁 Cấu trúc thư mục
 
 ```
-FBP/
-├── index.html                      # File redirect đến trang chủ
-├── assets/                         # Thư mục chứa hình ảnh, media
-├── components/                     # Components dùng chung
-│   ├── buttons.css                # Các kiểu button
-│   ├── header.css                 # Dynamic Island Header
-│   ├── footer.css                 # Footer component
-│   └── cards.css                  # Card components
+FBPPJ/
+├── app.py                 # Flask entry point (NEW - replaces server.py)
+├── requirements.txt       # Python dependencies
 │
-├── pages/                          # Các trang của website
-│   ├── home/                      # Trang chủ
+├── backend/               # Backend modules (NEW)
+│   ├── __init__.py
+│   ├── config.py         # Configuration
+│   ├── utils/            # Utility functions
+│   │   ├── file_utils.py
+│   │   └── api_client.py
+│   ├── services/         # Business logic
+│   │   ├── detector.py      # YOLO tumor detection
+│   │   ├── video_processor.py
+│   │   └── report_generator.py
+│   └── routes/           # API routes
+│       └── api_routes.py
+│
+├── model/
+│   └── best.pt           # YOLO model weights
+│
+├── pages/                # Frontend pages
+│   ├── home/             # Landing page
+│   ├── theory/           # FBP theory explanation
+│   ├── mophong/          # FBP simulation (refactored)
 │   │   ├── index.html
-│   │   ├── home.css
-│   │   └── home.js
-│   │
-│   ├── theory/                    # Trang lý thuyết
-│   │   ├── index.html
-│   │   ├── theory.css
-│   │   └── theory.js
-│   │
-│   ├── simulation/                # Trang mô phỏng
-│   │   ├── index.html
-│   │   ├── simulation.css
-│   │   └── simulation.js
-│   │
-│   ├── exercises/                 # Trang bài tập
-│   │   ├── index.html
-│   │   ├── exercises.css
-│   │   └── exercises.js
-│   │
-│   ├── about/                     # Trang giới thiệu
-│   │   ├── index.html
-│   │   ├── about.css
-│   │   └── about.js
-│   │
-│   └── contact/                   # Trang liên hệ
+│   │   ├── mophong.css
+│   │   ├── mophong-new.js      # New main controller
+│   │   ├── fbp_processor.js    # FBP algorithm
+│   │   └── modules/            # JS modules (NEW)
+│   │       ├── ui-controller.js
+│   │       ├── canvas-manager.js
+│   │       ├── file-upload.js
+│   │       ├── phantom-generator.js
+│   │       ├── metrics.js
+│   │       ├── fbp-core.js
+│   │       └── fbp-utils.js
+│   ├── analysis/         # Video analysis
+│   └── chatbot/          # AI chatbot (refactored)
 │       ├── index.html
-│       ├── contact.css
-│       └── contact.js
+│       ├── chatbot.css
+│       ├── chatbot-new.js      # New main controller
+│       └── modules/            # JS modules (NEW)
+│           ├── api-client.js
+│           ├── chat-ui.js
+│           ├── report-renderer.js
+│           ├── suggestions.js
+│           └── conversation.js
 │
-└── homepage/                      # Thư mục cũ (có thể xóa sau khi kiểm tra)
-    ├── index.html
-    ├── main.js
-    ├── mophong.html
-    ├── styles.css
-    └── theory.html
+├── components/           # Shared CSS components
+├── assets/               # Global assets
+├── results/              # Analysis results (JSON reports)
+├── uploads/              # Uploaded files
+├── data/                 # Sample DICOM data
+├── php/                  # PHP API (legacy)
+├── scripts/              # Python utility scripts
+├── fbp-chat/             # Expo React Native app
+│
+└── _archive/             # Archived old files
+    ├── old_main/         # Original server.py, mophong.js, chatbot.js
+    ├── test/             # Test scripts
+    └── homepage/         # Old homepage
 ```
 
-## Quy ước đặt tên
+## 🚀 Chạy ứng dụng
 
-### Thư mục
-- Mỗi page có một thư mục riêng trong `/pages/`
-- Tên thư mục: chữ thường, không dấu, dùng gạch ngang nếu có nhiều từ
-- VD: `home`, `theory`, `simulation`, `exercises`
-
-### File
-- Mỗi page có 3 file chính:
-  - `index.html` - Nội dung HTML
-  - `[page-name].css` - Style riêng của page
-  - `[page-name].js` - JavaScript riêng của page
-
-### Components
-- Các component dùng chung được đặt trong `/components/`
-- Import vào page qua thẻ `<link>` với đường dẫn tương đối
-- VD: `<link rel="stylesheet" href="../../components/buttons.css" />`
-
-## Cách sử dụng
-
-### 1. Truy cập website
-- Mở file `index.html` ở thư mục gốc
-- Hoặc truy cập trực tiếp: `pages/home/index.html`
-
-### 2. Tạo page mới
-```
-1. Tạo thư mục mới trong /pages/
-2. Tạo 3 file: index.html, [name].css, [name].js
-3. Import components cần thiết
-4. Cập nhật navigation links trong header
+### Backend (Flask)
+```bash
+pip install -r requirements.txt
+python app.py
 ```
 
-### 3. Sử dụng components
-```html
-<!-- Import components -->
-<link rel="stylesheet" href="../../components/buttons.css" />
-<link rel="stylesheet" href="../../components/header.css" />
-<link rel="stylesheet" href="../../components/footer.css" />
-<link rel="stylesheet" href="../../components/cards.css" />
-```
+### Truy cập
+- Trang chủ: http://localhost:5000
+- Mô phỏng FBP: http://localhost:5000/pages/mophong/
+- Chatbot AI: http://localhost:5000/pages/chatbot/
+- Phân tích video: http://localhost:5000/pages/analysis/
 
-### 4. Navigation giữa các trang
-```html
-<!-- Từ home sang theory -->
-<a href="../theory/index.html">Lý thuyết</a>
+## 🔧 Các module mới
 
-<!-- Từ theory về home -->
-<a href="../home/index.html">Trang chủ</a>
-```
+### Backend Modules
+- `backend/services/detector.py` - YOLO tumor detection
+- `backend/services/video_processor.py` - Video frame extraction
+- `backend/services/report_generator.py` - Medical report generation
+- `backend/routes/api_routes.py` - Flask API endpoints
 
-## Các trang đã hoàn thành
+### Frontend Modules (mophong)
+- `modules/ui-controller.js` - UI components (header, tabs, notifications)
+- `modules/canvas-manager.js` - Canvas rendering
+- `modules/file-upload.js` - File upload & webcam
+- `modules/phantom-generator.js` - Test phantom generation
+- `modules/metrics.js` - PSNR, SSIM calculations
+- `modules/fbp-core.js` - FBP reconstruction algorithm
+- `modules/fbp-utils.js` - Image preprocessing
 
-✅ **Home Page** (`pages/home/`)
-- Hero section với gradient
-- Getting Started với 2 cột
-- About Us section
-- Theory preview cards
-- Features grid
-- Full responsive
+### Frontend Modules (chatbot)
+- `modules/api-client.js` - Groq API client
+- `modules/chat-ui.js` - Chat message rendering
+- `modules/report-renderer.js` - Medical report display
+- `modules/suggestions.js` - Quick action suggestions
+- `modules/conversation.js` - Chat history management
 
-✅ **Theory Page** (`pages/theory/`)
-- Hero với breadcrumb
-- Table of Contents
-- Sidebar navigation
-- Article content với styling
-- Math formulas, timelines
-- Resources section
+## 📝 Migration Notes
 
-⏳ **Đang phát triển:**
-- Simulation page
-- Exercises page
-- About page
-- Contact page
+Các file cũ đã được archive:
+- `server.py` → `_archive/old_main/server.py` (thay bằng `app.py` + `backend/`)
+- `mophong.js` → `_archive/old_main/mophong.js` (thay bằng `mophong-new.js` + `modules/`)
+- `chatbot.js` → `_archive/old_main/chatbot.js` (thay bằng `chatbot-new.js` + `modules/`)
 
-## Components có sẵn
+## 🎯 TODO
 
-### Buttons (buttons.css)
-- `.btn-primary` - Button chính
-- `.btn-secondary` - Button phụ
-- `.btn-outline` - Button viền
-- `.btn-small` / `.btn-large` - Kích thước
-- `.btn-auth` - Button đăng nhập/đăng ký
-- `.btn-link` - Link dạng button
-
-### Cards (cards.css)
-- `.card` - Card cơ bản
-- `.icon-card` - Card với icon
-- `.feature-card` - Feature card
-- `.step-card` - Step card với số
-- `.theory-card` - Theory card
-- `.badge` - Badge nhỏ
-
-### Header (header.css)
-- `.dynamic-header` - Header dạng Dynamic Island
-- `.header-container` - Container
-- `.header-nav` - Navigation menu
-- `.nav-link` - Link trong nav
-
-### Footer (footer.css)
-- `.footer` - Footer component
-- `.footer-grid` - Grid layout 4 cột
-- `.footer-brand` - Branding
-- `.footer-social` - Social links
-
-## Tính năng chính
-
-### JavaScript
-1. **Smooth Scroll** - Cuộn mượt khi click nav
-2. **Scroll Spy** - Highlight active section
-3. **Mobile Menu** - Responsive menu
-4. **Scroll Reveal** - Animation khi scroll
-5. **Counter Animation** - Đếm số thống kê
-6. **Parallax Effect** - Hiệu ứng parallax
-
-### CSS
-1. **Responsive Design** - Tương thích mọi màn hình
-2. **Dark Theme** - Theme tối chuyên nghiệp
-3. **Gradient Colors** - Màu gradient đẹp mắt
-4. **Animations** - Hiệu ứng mượt mà
+- [ ] Cập nhật HTML files để sử dụng module mới
+- [ ] Fix FBP flow (sinogram → CT image)
+- [ ] Thêm unit tests
+- [ ] Docker support
 5. **Typography** - Font chữ đẹp và dễ đọc
 
 ## Browser Support

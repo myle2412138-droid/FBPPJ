@@ -34,6 +34,11 @@ build/
 Thumbs.db
 desktop.ini
 
+# Environment files (contains secrets)
+.env
+.env.local
+.env.*.local
+
 # Logs
 *.log
 
